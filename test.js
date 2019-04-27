@@ -1,94 +1,86 @@
-$(loadingBorrowers);
+$(function () {
+    $("#home").slideUp(0).delay(250).fadeIn(500);
+});
 
-function loadingBorrowers() {
-    hideIfAuth();
-    $.ajax({
-        type: "GET",
-        url: "/api/borrowers",
-        contentType: "application/json",
-        success: function (data, textStatus, xhr) {
-            //todo mb fix(transfer) hidding elem
-            if (Array.isArray(data)) {
-                $(".wrapper").hide(); //hide loading spiner
-                $('.container').append(" <table class=\"table table-hover\">\n" +
-                    "        <thead>\n" +
-                    "        <tr>\n" +
-                    "            <th>ааМб</th>\n" +
-                    "            <th>аЄаАаМаИаЛаИб</th>\n" +
-                    "            <th>ааДбаЕбб</th>\n" +
-                    "        </tr>\n" +
-                    "        </thead>\n" +
-                    "        <tbody>\n" +
-                    "        </tbody>\n" +
-                    "    </table>");
-
-                data.forEach(function (value) {
-                    $('.table tbody').append('<tr>' +
-                        '<td>' + value.first_name + '</td>' +
-                        '<td>' + value.last_name + '</td>' +
-                        '<td>' + value.address + '</td>' +
-                        '<td><a href="/credits?bid=' + value.id + '"  class="btn btn-outline-primary btn-sm">абаЕаДаИбаНаАб аИббаОбаИб</a></td>' +
-                        '</tr>');
-                });
-            } else {
-                $(".welcome-message").slideUp(0).delay(250).fadeIn(500);
-                $.ajax({
-                    type: "GET",
-                    url: "/api/statistics/quantity",
-                    contentType: "application/json",
-                    success: function (data, textStatus, xhr) {
-                        $('.borrower-count').text(data.borrower);
-                        $('.credit-count').text(data.credit);
-                    }
-                });
-            }
+function signUp() {
+    if (isValideData()) {
+        if (!isExists($("#login").val())) {
+            $.ajax({
+                type: "GET",
+                url: "/api/registration",
+                data: {
+                    login: $("#login").val(),
+                    password: $("#password").val()
+                },
+                contentType: "application/json",
+                success: function (data, textStatus) {
+                    window.location.replace("/");
+                },
+                error: function (request, status, error) {
+                    var resp = jQuery.parseJSON(request.responseText);
+                    alert(resp.message);
+                }
+            });
+        } else {
+            alert("аЂаАаКаОаЙ аПаОаЛбаЗаОаВаАбаЕаЛб баЖаЕ бббаЕббаВбаЕб.");
         }
-    });
-}
-
-
-function searchBorrowers() {
-    $.ajax({
-        type: "GET",
-        url: "/api/borrowers",
-        data: {
-            fname: $("#fname").val()
-        },
-        contentType: "application/json",
-        success: function (data, textStatus, xhr) {
-            $(".table").find("tr:not(:first)").remove();
-
-            if (Array.isArray(data)) {
-                data.forEach(function (value) {
-                    $('.table tbody').append('<tr>' +
-                        '<td>' + value.first_name + '</td>' +
-                        '<td>' + value.last_name + '</td>' +
-                        '<td>' + value.address + '</td>' +
-                        '<td><a href="/credits?bid=' + value.id + '"  class="btn btn-outline-primary btn-sm">абаЕаДаИбаНаАб аИббаОбаИб</a></td>' +
-                        '</tr>');
-                });
-            }
-        }
-    });
-}
-
-function hideIfAuth() {
-    if (getCookie("token") !== undefined) {
-        $("#logout").slideUp(0).delay(250).fadeIn(500);
-        $("#graph").slideUp(0).delay(250).fadeIn(500);
-        $("#admin-panel").slideUp(0).delay(250).fadeIn(500);
-        /****************************************/
-    } else {
-        $("#registration").slideUp(0).delay(250).fadeIn(500);
-        $("#sign-in").slideUp(0).delay(250).fadeIn(500);
-        $("#admin-panel").slideUp(0).delay(250).fadeIn(500);
-        $(".wrapper").hide(); //hide loading spiner
     }
 }
 
-function getCookie(name) {
-    var matches = document.cookie.match(new RegExp(
-        "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
-    ));
-    return matches ? decodeURIComponent(matches[1]) : undefined;
+function signIn() {
+    $.ajax({
+        type: "POST",
+        url: "/login",
+        data: JSON.stringify({
+            login: $("#login").val(),
+            password: $("#password").val()
+        }),
+        contentType: "application/json",
+        success: function (data, textStatus) {
+            window.location.replace("/");
+        },
+        error: function (request, status, error) {
+            var resp = jQuery.parseJSON(request.responseText);
+            alert(resp.message);
+        }
+    });
+}
+
+//return true if user exists in database
+function isExists(login) {
+    var isExists;
+    $.ajax({
+        type: "GET",
+        url: "/api/users/exists",
+        async: false,
+        data: {
+            login: login
+        },
+        contentType: "application/json",
+        success: function (data, textStatus) {
+            isExists = data.exists;
+
+        },
+        error: function (request, status, error) {
+            var resp = jQuery.parseJSON(request.responseText);
+            alert(resp.message);
+        }
+    });
+    return isExists;
+}
+
+function isValideData() {
+    var login = $("#login").val();
+    var password = $("#password").val();
+    if (login.length < 5 || login.length > 10) {
+        alert("ааОаГаИаН аДаОаЛаЖаЕаН аБббб аОб 5 аДаО 10 баИаМаВаОаЛаОаВ");
+        return false;
+    } else if (password.length < 5 || password.length > 20) {
+        alert("ааАбаОаЛб аДаОаЛаЖаЕаН аБббб аОб 5 аДаО 20 баИаМаВаОаЛаОаВ");
+        return false;
+    } else if (!/^([a-zаА-бб]+|\\d+)$/.test(login) || !/^([a-zаА-бб]+|\\d+)$/.test(password)) {
+        alert("ааОаГаИаН аИ аПаАбаОаЛб аМаОаГбб баОаДаЕбаЖаАбб баОаЛбаКаО аБбаКаВб");
+        return false;
+    }
+    return true;
 }
