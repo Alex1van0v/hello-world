@@ -1,86 +1,80 @@
-$(function () {
+$(loadingCreditHistory);
+
+function loadingBorrowerCredits(isAdmin) {
     $("#home").slideUp(0).delay(250).fadeIn(500);
-});
-
-function signUp() {
-    if (isValideData()) {
-        if (!isExists($("#login").val())) {
-            $.ajax({
-                type: "GET",
-                url: "/api/registration",
-                data: {
-                    login: $("#login").val(),
-                    password: $("#password").val()
-                },
-                contentType: "application/json",
-                success: function (data, textStatus) {
-                    window.location.replace("/");
-                },
-                error: function (request, status, error) {
-                    var resp = jQuery.parseJSON(request.responseText);
-                    alert(resp.message);
-                }
-            });
-        } else {
-            alert("аЂаАаКаОаЙ аПаОаЛбаЗаОаВаАбаЕаЛб баЖаЕ бббаЕббаВбаЕб.");
-        }
-    }
-}
-
-function signIn() {
-    $.ajax({
-        type: "POST",
-        url: "/login",
-        data: JSON.stringify({
-            login: $("#login").val(),
-            password: $("#password").val()
-        }),
-        contentType: "application/json",
-        success: function (data, textStatus) {
-            window.location.replace("/");
-        },
-        error: function (request, status, error) {
-            var resp = jQuery.parseJSON(request.responseText);
-            alert(resp.message);
-        }
-    });
-}
-
-//return true if user exists in database
-function isExists(login) {
-    var isExists;
     $.ajax({
         type: "GET",
-        url: "/api/users/exists",
-        async: false,
+        url: "/api/credits",
         data: {
-            login: login
+            bid: urlParameters()["bid"]
         },
         contentType: "application/json",
         success: function (data, textStatus) {
-            isExists = data.exists;
-
-        },
-        error: function (request, status, error) {
-            var resp = jQuery.parseJSON(request.responseText);
-            alert(resp.message);
+            $(".wrapper").hide(); //hide loading spiner
+            var borrower = data[0].borrower;
+            $(".card-block")
+                .append('<h4 class="card-title">ааМб: ' + borrower.first_name + ' ' + borrower.last_name + '</h4>')
+                .append('<p class="card-text">ааДбаЕб: ' + borrower.address + '</p>');
+            if (isAdmin) {
+                loadFlag(borrower.id);
+            }
+            data.forEach(function (value) {
+                $('.table tbody').append('<tr>' +
+                    '<td>' + value.sum + '</td>' +
+                    '<td>' + value.closed + '</td>' +
+                    '<td>' + value.overdue + '</td>' +
+                    '</tr>');
+            });
         }
     });
-    return isExists;
 }
 
-function isValideData() {
-    var login = $("#login").val();
-    var password = $("#password").val();
-    if (login.length < 5 || login.length > 10) {
-        alert("ааОаГаИаН аДаОаЛаЖаЕаН аБббб аОб 5 аДаО 10 баИаМаВаОаЛаОаВ");
-        return false;
-    } else if (password.length < 5 || password.length > 20) {
-        alert("ааАбаОаЛб аДаОаЛаЖаЕаН аБббб аОб 5 аДаО 20 баИаМаВаОаЛаОаВ");
-        return false;
-    } else if (!/^([a-zаА-бб]+|\\d+)$/.test(login) || !/^([a-zаА-бб]+|\\d+)$/.test(password)) {
-        alert("ааОаГаИаН аИ аПаАбаОаЛб аМаОаГбб баОаДаЕбаЖаАбб баОаЛбаКаО аБбаКаВб");
-        return false;
+function loadingCreditHistory() {
+    $.ajax({
+        type: "GET",
+        url: "/api/roles",
+        contentType: "application/json",
+        success: function (data, textStatus) {
+            var isAdmin = false;
+            if (data[0].authority === "ROLE_ADMIN") {
+                isAdmin = true;
+            }
+            loadingBorrowerCredits(isAdmin);
+        }
+    });
+}
+
+function loadFlag(borrowerId) {
+    $.ajax({
+        type: "GET",
+        url: "/api/flag",
+        data: {
+            bid: borrowerId
+        },
+        contentType: "application/json",
+        success: function (data, textStatus) {
+            $(".card-block")
+                .append('<p class="card-text">аЄаЛаАаГ: ' + data + '</p>');
+        }
+    });
+}
+
+function urlParameters() {
+    var sPageURL = window.location.search.substring(1);
+    var sURLVariables = sPageURL.split('&');
+    var map = {};
+    for (var i = 0; i < sURLVariables.length; i++) {
+        var sParameterName = sURLVariables[i].split('=');
+        var value = decodeURIComponent(sParameterName[1]);
+        if (map[sParameterName[0]]) {
+            if (Array.isArray(map[sParameterName[0]])) {
+                map[sParameterName[0]].push(value);
+            } else {
+                map[sParameterName[0]] = [map[sParameterName[0]], value];
+            }
+        } else {
+            map[sParameterName[0]] = value;
+        }
     }
-    return true;
+    return map;
 }
